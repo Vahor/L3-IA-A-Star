@@ -1,16 +1,16 @@
 from copy import deepcopy
 
-from a_star import a_star_search
-from render import render_tree
-from state import State
+from a_star import a_star_search, AStarNode, render_tree, AStarResult, def_node_attr
+from utils import ife
 
 
-class MachineState(State):
+class MachineState(AStarNode):
 
     def __init__(self, arm: str or None, stacks: list[list[str]], max_stacks: int = 3):
         self.arm = arm
         self.stacks = stacks
         self.max_stacks = max_stacks
+        self.size = sum(len(stack) for stack in stacks) + (0 if arm is None else 1)
 
         # On remplit les piles avec des listes vides au besoin
         for i in range(max_stacks - len(stacks)):
@@ -21,8 +21,8 @@ class MachineState(State):
     def __repr__(self):
         return f"MachineState(arm={self.arm}, stacks={self.stacks}, max_stacks={self.max_stacks})"
 
-    def __lt__(self, other):
-        return False
+    def __str__(self):
+        return f"MachineState(arm={self.arm}, stacks={self.stacks})"
 
     def __eq__(self, other):
         if self.arm != other.arm:
@@ -35,7 +35,12 @@ class MachineState(State):
         return True
 
     def __hash__(self):
-        return id(self)
+        r = 0
+        for stack in self.stacks:
+            for v in stack:
+                r += hash(v)
+
+        return hash((self.arm, self.max_stacks, r))
 
     def get_free_blocks(self) -> list[str]:
         """
@@ -70,6 +75,12 @@ class MachineState(State):
         return False
 
     def children(self) -> list:
+        """
+        Construit la liste des nœuds fils du nœud actuel
+
+        :return: Une liste d'états.
+        """
+
         children = []
 
         # Si le bras est libre, on essaie de porter un element en tête de file
@@ -100,15 +111,39 @@ class MachineState(State):
         return children
 
 
-def b(value: bool) -> int:
-    return 1 if value else -1
-
-
 def heuristic_1(state: MachineState) -> float:
     return 6 - \
-           (b(state.is_above('A', 'B')) * 1) - \
-           (b(state.is_above('B', 'C')) * 2) - \
-           (b(state.is_above('C', None)) * 3)
+           (ife(state.is_above('A', 'B')) * 1) - \
+           (ife(state.is_above('B', 'C')) * 2) - \
+           (ife(state.is_above('C', None)) * 3)
+
+
+def heuristic_2(state: MachineState) -> float:
+    return 3 - \
+           (ife(state.is_above('A', 'B'))) - \
+           (ife(state.is_above('B', 'C'))) - \
+           (ife(state.is_above('C', None)))
+
+
+def render_node(node: MachineState, result: AStarResult) -> str:
+    lines = []
+
+    lines.append(f"#{result.step[node]}")
+    lines.append("")
+    try:
+        h = result.h_score[node]
+        g = result.g_score[node]
+        lines.append(f"f(n) = {h} + {g} = {h + g}")
+    except Exception as e:
+        print(type(e))
+
+    lines.append("")
+    lines.append(f"Bras : {node.arm}")
+
+    for i, stack in enumerate(node.stacks):
+        lines.append(f"Pile #{i} : " + " ".join(stack) + " #" * (node.size - len(stack)))
+
+    return "\n".join(lines)
 
 
 def main():
@@ -116,8 +151,10 @@ def main():
     to_state = MachineState(None, [['A', 'B', 'C']])
 
     path = a_star_search(from_state, to_state, heuristic_1)
+    render_tree(path, render_node, def_node_attr, "out/machine-heuristic_1.png")
 
-    render_tree(path)
+    path = a_star_search(from_state, to_state, heuristic_2)
+    render_tree(path, render_node, def_node_attr, "out/machine-heuristic_2.png")
 
 
 if __name__ == '__main__':
