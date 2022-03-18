@@ -1,7 +1,5 @@
-from copy import deepcopy
-
 from a_star import a_star_search, AStarNode, render_tree, AStarResult, def_node_attr
-from utils import ife
+from utils import ife, deepcopy2d
 
 
 class MachineState(AStarNode):
@@ -87,7 +85,7 @@ class MachineState(AStarNode):
         if self.arm is None:
 
             for free_block in self.get_free_blocks():
-                new_stacks = deepcopy(self.stacks)
+                new_stacks = deepcopy2d(self.stacks)
 
                 for stack in new_stacks:  # On retire le bloc concerné dans nos listes
                     if free_block in stack:
@@ -100,7 +98,7 @@ class MachineState(AStarNode):
 
         else:  # Sinon, on essaie de poser sur une tête de file, ou dans une nouvelle file
             for i in range(self.max_stacks):
-                new_stacks = deepcopy(self.stacks)
+                new_stacks = deepcopy2d(self.stacks)
                 # On ajoute le bloc qu'on porte, dans la i-ème file
                 new_stacks[i].insert(0, self.arm)
 
@@ -109,20 +107,6 @@ class MachineState(AStarNode):
                 children.append(state)
 
         return children
-
-
-def heuristic_1(state: MachineState) -> float:
-    return 6 - \
-           (ife(state.is_above('A', 'B')) * 1) - \
-           (ife(state.is_above('B', 'C')) * 2) - \
-           (ife(state.is_above('C', None)) * 3)
-
-
-def heuristic_2(state: MachineState) -> float:
-    return 3 - \
-           (ife(state.is_above('A', 'B'))) - \
-           (ife(state.is_above('B', 'C'))) - \
-           (ife(state.is_above('C', None)))
 
 
 def render_node(node: MachineState, result: AStarResult) -> str:
@@ -141,20 +125,52 @@ def render_node(node: MachineState, result: AStarResult) -> str:
     lines.append(f"Bras : {node.arm}")
 
     for i, stack in enumerate(node.stacks):
-        lines.append(f"Pile #{i} : " + " ".join(stack) + " #" * (node.size - len(stack)))
+        lines.append(f"Pile #{i} : " + " ".join(stack[::-1]) + " _" * (node.size - len(stack)))
 
     return "\n".join(lines)
 
 
-def main():
+def td():
+    def heuristic_1(state: MachineState) -> float:
+        return 6 - \
+               (ife(state.is_above('A', 'B')) * 1) - \
+               (ife(state.is_above('B', 'C')) * 2) - \
+               (ife(state.is_above('C', None)) * 3)
+
+    def heuristic_2(state: MachineState) -> float:
+        return 3 - \
+               (ife(state.is_above('A', 'B'))) - \
+               (ife(state.is_above('B', 'C'))) - \
+               (ife(state.is_above('C', None)))
+
     from_state = MachineState(None, [['C', 'A'], ['B']])
     to_state = MachineState(None, [['A', 'B', 'C']])
 
     path = a_star_search(from_state, to_state, heuristic_1)
-    render_tree(path, render_node, def_node_attr, "out/machine-heuristic_1.png")
+    render_tree(path, render_node, def_node_attr, "out/machine-td-heuristic_1.png")
 
     path = a_star_search(from_state, to_state, heuristic_2)
-    render_tree(path, render_node, def_node_attr, "out/machine-heuristic_2.png")
+    render_tree(path, render_node, def_node_attr, "out/machine-td-heuristic_2.png")
+
+
+def random():
+    from_state = MachineState('E', [['C', 'A'], ['B'], ['D']])
+    to_state = MachineState(None, [['A', 'B', 'C', 'D', 'E']])
+
+    def heuristic_1(state: MachineState) -> float:
+        return 10 - \
+               (ife(state.is_above('A', 'B')) * 1) - \
+               (ife(state.is_above('B', 'C')) * 2) - \
+               (ife(state.is_above('C', 'D')) * 3) - \
+               (ife(state.is_above('E', None)) * 4)
+
+    path = a_star_search(from_state, to_state, heuristic_1)
+    render_tree(path, render_node, def_node_attr, "out/machine-random-heuristic_1.png")
+
+
+def main():
+    td()
+    random()
 
 
 if __name__ == '__main__':

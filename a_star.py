@@ -15,7 +15,7 @@ class AStarNode(State, ABC):
 
 
 # AStarResult est une classe qui contient le résultat de l'algorithme A*
-class AStarResult: # todo mettre tout ça dans le consructeur
+class AStarResult:
     root: AStarNode
     path: list[AStarNode]
     visited: list[AStarNode]
@@ -84,12 +84,12 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h) -> AStarResult 
     f_score = PriorityQueue()
 
     # Tuple = (f, g, h, value). Seuls f et value sont utiles, mais on garde toutes les valeurs pour le debug
-    f_score.put((from_state_f, from_state_g, from_state_h, from_state))
+    f_score.put((from_state_f, from_state))
 
     # Tant qu'on a des états à essayer
     while to_check:
         current = f_score.get()  # On récupère l'état avec le plus petit heuristic
-        current_state: State = current[3]
+        current_state: State = current[1]
         step[current_state] = result.steps
 
         visited.append(current_state)  # Et on le marque comme visité
@@ -104,7 +104,6 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h) -> AStarResult 
             return result
 
         result.steps += 1  # On augmente le nombre d'étapes
-        print(result.steps)
 
         if current_state in to_check:
             to_check.remove(current_state)  # On le retire de la liste des nœuds à visiter
@@ -112,7 +111,12 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h) -> AStarResult 
         g_current = g_score[current_state]
         # Sinon on essaie tous les fils de l'état actuel dans notre liste
         for children in current_state.children():
-            h_child = h(children)
+
+            if children in h_score:
+                h_child = h_score[children]
+            else:
+                h_child = h(children)
+
             g_child = g_current + 1  # Chaque avancement dans une branche coûte 1
             f_child = h_child + g_child
 
@@ -124,16 +128,12 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h) -> AStarResult 
 
                 if children not in visited:  # On n'ajoute à la file que si l'état n'a pas déjà été testé précédemment
                     to_check.append(children)
-                    f_score.put((f_child, g_child, h_child, children))
+                    f_score.put((f_child, children))
 
     return None
 
 
 def render_tree(result: AStarResult, node_content, node_attr, file_name: str) -> None:
-    if result is None:
-        print("Aucun chemin")
-        return
-    print(f"Recherche terminée en {result.steps} étapes")
     """
     Génère une image à partir d'un résultat A*
 
@@ -144,6 +144,12 @@ def render_tree(result: AStarResult, node_content, node_attr, file_name: str) ->
     :param file_name: Nom du fichier dans lequel enregistrer l'image
     :type file_name: str
     """
+
+    if result is None:
+        print("Aucun chemin")
+        return
+    print(f"Recherche terminée en {result.steps} étapes ({file_name})")
+
     root = add_node(result.root, result, [])
 
     DotExporter(root,

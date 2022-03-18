@@ -11,3 +11,13 @@ def ife(value: bool, a: int = 1, b: int = -1) -> int:
     :return: a si value est vraie sinon b
     """
     return a if value else b
+
+
+def deepcopy2d(x: list) -> list:
+    """
+    Retourne une copie d'une liste 2D
+
+    :param x: la 2d liste à copier
+    :return: La copie de la liste.
+    """
+    return [row[:] for row in x]

@@ -1,8 +1,7 @@
-from copy import deepcopy
-from math import ceil, floor
+from math import floor
 
 from a_star import a_star_search, AStarNode, render_tree, AStarResult, def_node_attr
-from utils import ife
+from utils import ife, deepcopy2d
 
 
 class TaquinState(AStarNode):
@@ -63,7 +62,7 @@ class TaquinState(AStarNode):
 
         # Échange droit
         if x != self.col_count - 1:
-            new_rows = deepcopy(self.rows)
+            new_rows = deepcopy2d(self.rows)
 
             prev = new_rows[y][x + 1]
             new_rows[y][x + 1] = new_rows[y][x]
@@ -73,7 +72,7 @@ class TaquinState(AStarNode):
 
         # Échange haut
         if y != 0:
-            new_rows = deepcopy(self.rows)
+            new_rows = deepcopy2d(self.rows)
 
             prev = new_rows[y - 1][x]
             new_rows[y - 1][x] = new_rows[y][x]
@@ -83,7 +82,7 @@ class TaquinState(AStarNode):
 
         # Échange gauche
         if x != 0:
-            new_rows = deepcopy(self.rows)
+            new_rows = deepcopy2d(self.rows)
 
             prev = new_rows[y][x - 1]
             new_rows[y][x - 1] = new_rows[y][x]
@@ -93,7 +92,7 @@ class TaquinState(AStarNode):
 
         # Échange bas
         if y != self.row_count - 1:
-            new_rows = deepcopy(self.rows)
+            new_rows = deepcopy2d(self.rows)
 
             prev = new_rows[y + 1][x]
             new_rows[y + 1][x] = new_rows[y][x]
@@ -102,19 +101,6 @@ class TaquinState(AStarNode):
             children.append(TaquinState(new_rows))
 
         return children
-
-
-def heuristic_1(state: TaquinState) -> float:
-    state.update_indexes()
-    return (ife(state.get_index(1) == 0, a=0, b=1)) + \
-           (ife(state.get_index(2) == 1, a=0, b=1)) + \
-           (ife(state.get_index(3) == 2, a=0, b=1)) + \
-           (ife(state.get_index(7) == 3, a=0, b=1)) + \
-           (ife(state.get_index(0) == 4, a=0, b=1)) + \
-           (ife(state.get_index(4) == 5, a=0, b=1)) + \
-           (ife(state.get_index(8) == 6, a=0, b=1)) + \
-           (ife(state.get_index(6) == 7, a=0, b=1)) + \
-           (ife(state.get_index(5) == 8, a=0, b=1))
 
 
 def render_node(node: TaquinState, result: AStarResult) -> str:
@@ -138,7 +124,27 @@ def render_node(node: TaquinState, result: AStarResult) -> str:
     return "\n".join(lines)
 
 
-def main():
+def heuristic_1(state: TaquinState) -> float:
+    state.update_indexes()
+    s = 0
+    for i in range(state.size - 1):
+        s += ife(state.get_index(i + 1) == i, a=0, b=1)
+    return s
+
+
+def _3x3():
+    def heuristic_2(state: TaquinState) -> float:
+        state.update_indexes()
+        return (ife(state.get_index(1) == 0, a=0, b=1)) + \
+               (ife(state.get_index(2) == 1, a=0, b=1)) + \
+               (ife(state.get_index(3) == 2, a=0, b=1)) + \
+               (ife(state.get_index(7) == 3, a=0, b=1)) + \
+               (ife(state.get_index(0) == 4, a=0, b=1)) + \
+               (ife(state.get_index(4) == 5, a=0, b=1)) + \
+               (ife(state.get_index(8) == 6, a=0, b=1)) + \
+               (ife(state.get_index(6) == 7, a=0, b=1)) + \
+               (ife(state.get_index(5) == 8, a=0, b=1))
+
     from_state = TaquinState([
         [1, 4, 2],
         [7, 6, 3],
@@ -151,8 +157,21 @@ def main():
         [8, 6, 5]
     ])
 
+    path = a_star_search(from_state, to_state, heuristic_2)
+    render_tree(path, render_node, def_node_attr, "out/taquin-3x3-heuristic_2.png")
+
+    to_state = TaquinState([
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 0]
+    ])
+
     path = a_star_search(from_state, to_state, heuristic_1)
-    render_tree(path, render_node, def_node_attr, "out/taquin-heuristic_1.png")
+    render_tree(path, render_node, def_node_attr, "out/taquin-3x3-heuristic_1.png")
+
+
+def main():
+    _3x3()
 
 
 if __name__ == '__main__':
