@@ -1,23 +1,28 @@
+from dataclasses import dataclass, field
+
 from a_star import AStarNode, AStarResult, def_node_attr, wrap_search
 from utils import ife, deepcopy2d
 
 
+@dataclass(frozen=True, order=True)  # Le nombre d'étapes change aussi selon l'ordre.
 class TaquinState(AStarNode):
+    rows: list[list[int]] = field(hash=False)
+    cache_index: {int: int} = field(default_factory=dict, hash=False)
 
-    def __init__(self, rows: list[list[int]]):
-        self.rows = rows
-        self.col_count = len(rows[0])
-        self.row_count = len(rows)
-        self.size = self.row_count * self.col_count
-        self.cache_index: {int: int} = {}
-
+    def __post_init__(self):
         self.update_indexes()
 
-    def __repr__(self):
-        return f"TaquinState(rows={self.rows})"
+    @property
+    def col_count(self):
+        return len(self.rows[0])
 
-    def __str__(self):
-        return f"TaquinState(rows={self.rows})"
+    @property
+    def row_count(self):
+        return len(self.rows)
+
+    @property
+    def size(self):
+        return self.row_count * self.col_count
 
     def __eq__(self, other):
         for row in self.rows:
@@ -26,14 +31,6 @@ class TaquinState(AStarNode):
                     return False
 
         return True
-
-    def __hash__(self):
-        r = 0
-        for row in self.rows:
-            for v in row:
-                r += hash(v)
-
-        return hash(r)
 
     def update_indexes(self) -> None:
         for y, row in enumerate(self.rows):
@@ -109,7 +106,7 @@ def render_node(node: TaquinState, result: AStarResult) -> str:
     try:
         h = result.h_score[node]
         g = result.g_score[node]
-        lines.append(f"f(n) = {h} + {g} = {h + g}")
+        lines.append(f"f(n) = {h} + {g:.1f} = {h + g}")
     except Exception as e:
         print(type(e))
 
@@ -192,6 +189,8 @@ def _4x4():
     ])
 
     wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-4x4-manhattan.png")
+    # wrap_search(from_state, to_state, manhattan, 0.1, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-s.png") # 60s environ 1800 noeuds
+    # wrap_search(from_state, to_state, manhattan, 2, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-b.png") # 50s environ 1100 noeuds
     # wrap_search(from_state, to_state, hamming,1, render_node, def_node_attr, "out/taquin-4x4-hamming.png")  # Trop long !
 
 

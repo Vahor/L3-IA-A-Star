@@ -1,44 +1,23 @@
+from dataclasses import dataclass, field
+
 from a_star import AStarNode, AStarResult, def_node_attr, wrap_search
 from utils import ife, deepcopy2d
 
 
+@dataclass(frozen=True)  # Le nombre d'étapes change aussi selon l'ordre.
 class MachineState(AStarNode):
+    arm: str or None
+    stacks: list[list[str]] = field(default_factory=list, hash=False)
+    max_stacks: int = field(default=3)
 
-    def __init__(self, arm: str or None, stacks: list[list[str]], max_stacks: int = 3):
-        self.arm = arm
-        self.stacks = stacks
-        self.max_stacks = max_stacks
-        self.size = sum(len(stack) for stack in stacks) + (0 if arm is None else 1)
-
+    def __post_init__(self):
         # On remplit les piles avec des listes vides au besoin
-        for i in range(max_stacks - len(stacks)):
-            stacks.append([])
+        for i in range(self.max_stacks - len(self.stacks)):
+            self.stacks.append([])
 
-        pass
-
-    def __repr__(self):
-        return f"MachineState(arm={self.arm}, stacks={self.stacks}, max_stacks={self.max_stacks})"
-
-    def __str__(self):
-        return f"MachineState(arm={self.arm}, stacks={self.stacks})"
-
-    def __eq__(self, other):
-        if self.arm != other.arm:
-            return False
-
-        for stack in self.stacks:
-            if stack not in other.stacks:
-                return False
-
-        return True
-
-    def __hash__(self):
-        r = 0
-        for stack in self.stacks:
-            for v in stack:
-                r += hash(v)
-
-        return hash((self.arm, self.max_stacks, r))
+    @property
+    def size(self):
+        return sum(len(stack) for stack in self.stacks) + (0 if self.arm is None else 1)
 
     def get_free_blocks(self) -> list[str]:
         """
@@ -52,6 +31,16 @@ class MachineState(AStarNode):
                 free_blocks.append(stack[0])
 
         return free_blocks
+
+    def __eq__(self, other):
+        if self.arm != other.arm:
+            return False
+
+        for stack in self.stacks:
+            if stack not in other.stacks:
+                return False
+
+        return True
 
     def is_above(self, first: str, second: str or None) -> bool:
         """
@@ -117,7 +106,7 @@ def render_node(node: MachineState, result: AStarResult) -> str:
     try:
         h = result.h_score[node]
         g = result.g_score[node]
-        lines.append(f"f(n) = {h} + {g} = {h + g}")
+        lines.append(f"f(n) = {h} + {g:.1f} = {h + g}")
     except Exception as e:
         print(type(e))
 
@@ -130,7 +119,7 @@ def render_node(node: MachineState, result: AStarResult) -> str:
     return "\n".join(lines)
 
 
-def td():
+def td_3():
     def heuristic_1(state: MachineState, _) -> float:
         return 6 - \
                (ife(state.is_above('A', 'B')) * 1) - \
@@ -146,11 +135,11 @@ def td():
     from_state = MachineState(None, [['C', 'A'], ['B']])
     to_state = MachineState(None, [['A', 'B', 'C']])
 
-    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-td-heuristic_1.png")
-    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine-td-heuristic_2.png")
+    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-3-heuristic_1.png")
+    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine-3-heuristic_2.png")
 
 
-def random():
+def _5():
     from_state = MachineState('E', [['C', 'A'], ['B'], ['D']])
     to_state = MachineState(None, [['A', 'B', 'C', 'D', 'E']])
 
@@ -161,12 +150,14 @@ def random():
                (ife(state.is_above('C', 'D')) * 3) - \
                (ife(state.is_above('E', None)) * 4)
 
-    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-random-heuristic_1.png")
+    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-5-heuristic_1.png")
+    wrap_search(from_state, to_state, heuristic_1, 0.1, render_node, def_node_attr, "out/machine-5-heuristic_1-g-s.png")
+    wrap_search(from_state, to_state, heuristic_1, 2, render_node, def_node_attr, "out/machine-5-heuristic_1-g-b.png")
 
 
 def main():
-    td()
-    random()
+    td_3()
+    _5()
 
 
 if __name__ == '__main__':

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from queue import PriorityQueue
 from random import random
 from time import perf_counter
@@ -15,6 +16,7 @@ class AStarNode(State):
 
 
 # AStarResult est une classe qui contient le résultat de l'algorithme A*
+@dataclass(frozen=True)
 class AStarResult:
     root: AStarNode
     path: list[AStarNode]
@@ -22,14 +24,11 @@ class AStarResult:
     g_score: {AStarNode: float}
     h_score: {AStarNode: float}
     parent: {AStarNode: AStarNode}
-    steps: int = 0
     step: {AStarNode: int}
-
-    def __init__(self):
-        pass
+    steps: int = 0
 
 
-def build_path(parent: {State: State}, current: State) -> list[State]:
+def build_path(parent: {State: State}, current: State) -> list:
     """
     Construit le chemin inverse depuis un point jusqu'a la racine à l'aide de la liste des parents
 
@@ -68,9 +67,6 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
         - step: l'ordre de passage d'un nœud
     """
 
-    result = AStarResult()
-    result.root = from_state
-
     from_state_g = 0
     from_state_h = h(from_state, to_state)
     from_state_f = from_state_g + from_state_h  # f = g + h
@@ -90,21 +86,22 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
     # Tant qu'on a des états à essayer
     while f_score:
         _, current = f_score.get()  # On récupère l'état avec le plus petit heuristic
-        step[current] = result.steps
+        step[current] = len(visited)
 
         visited.append(current)  # Et on le marque comme visité
 
         if current == to_state:  # Si c'est l'état cible, on s'arrête là
             # On ajoute les informations au résultat et on le retourne
-            result.path = build_path(parent, current)
-            result.visited = visited
-            result.g_score = g_score
-            result.h_score = h_score
-            result.step = step
-            result.parent = parent
-            return result
-
-        result.steps += 1  # On augmente le nombre d'étapes
+            return AStarResult(
+                from_state,
+                build_path(parent, current),
+                visited,
+                g_score,
+                h_score,
+                parent,
+                step,
+                len(visited)
+            )
 
         g_current = g_score[current]
         # Sinon on essaie tous les fils de l'état actuel dans notre liste
@@ -170,7 +167,7 @@ def def_node_attr(node, result: AStarResult) -> str:
     #   https://www.graphviz.org/doc/info/shapes.html#styles-for-nodes
 
     if node in result.path:
-        return "color=red"
+        return "color=red,style=filled, fillcolor=\"#0000000f\""
     return ""
 
 
