@@ -1,4 +1,4 @@
-from a_star import a_star_search, AStarNode, render_tree, AStarResult, def_node_attr
+from a_star import AStarNode, AStarResult, def_node_attr, wrap_search
 from utils import ife, deepcopy2d
 
 
@@ -131,13 +131,13 @@ def render_node(node: MachineState, result: AStarResult) -> str:
 
 
 def td():
-    def heuristic_1(state: MachineState) -> float:
+    def heuristic_1(state: MachineState, _) -> float:
         return 6 - \
                (ife(state.is_above('A', 'B')) * 1) - \
                (ife(state.is_above('B', 'C')) * 2) - \
                (ife(state.is_above('C', None)) * 3)
 
-    def heuristic_2(state: MachineState) -> float:
+    def heuristic_2(state: MachineState, _) -> float:
         return 3 - \
                (ife(state.is_above('A', 'B'))) - \
                (ife(state.is_above('B', 'C'))) - \
@@ -146,26 +146,22 @@ def td():
     from_state = MachineState(None, [['C', 'A'], ['B']])
     to_state = MachineState(None, [['A', 'B', 'C']])
 
-    path = a_star_search(from_state, to_state, heuristic_1)
-    render_tree(path, render_node, def_node_attr, "out/machine-td-heuristic_1.png")
-
-    path = a_star_search(from_state, to_state, heuristic_2)
-    render_tree(path, render_node, def_node_attr, "out/machine-td-heuristic_2.png")
+    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-td-heuristic_1.png")
+    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine-td-heuristic_2.png")
 
 
 def random():
     from_state = MachineState('E', [['C', 'A'], ['B'], ['D']])
     to_state = MachineState(None, [['A', 'B', 'C', 'D', 'E']])
 
-    def heuristic_1(state: MachineState) -> float:
+    def heuristic_1(state: MachineState, _) -> float:
         return 10 - \
                (ife(state.is_above('A', 'B')) * 1) - \
                (ife(state.is_above('B', 'C')) * 2) - \
                (ife(state.is_above('C', 'D')) * 3) - \
                (ife(state.is_above('E', None)) * 4)
 
-    path = a_star_search(from_state, to_state, heuristic_1)
-    render_tree(path, render_node, def_node_attr, "out/machine-random-heuristic_1.png")
+    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-random-heuristic_1.png")
 
 
 def main():

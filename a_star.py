@@ -1,6 +1,6 @@
-from abc import ABC
 from queue import PriorityQueue
 from random import random
+from time import perf_counter
 
 from anytree import Node
 from anytree.exporter import DotExporter
@@ -8,7 +8,7 @@ from anytree.exporter import DotExporter
 from state import State
 
 
-class AStarNode(State, ABC):
+class AStarNode(State):
 
     def __lt__(self, other):
         return False
@@ -21,6 +21,7 @@ class AStarResult:
     visited: list[AStarNode]
     g_score: {AStarNode: float}
     h_score: {AStarNode: float}
+    parent: {AStarNode: AStarNode}
     steps: int = 0
     step: {AStarNode: int}
 
@@ -41,11 +42,12 @@ def build_path(parent: {State: State}, current: State) -> list[State]:
     path = [current]
     while current in parent.keys():
         current = parent[current]
-        path.insert(0, current)
+        path.append(current)
+    path.reverse()
     return path
 
 
-def a_star_search(from_state: AStarNode, to_state: AStarNode, h) -> AStarResult or None:
+def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) -> AStarResult or None:
     """
     Réalise une recherche A* pour trouver le chemin le plus court entre deux point.
     La fonction heuristique est utilisée pour estimer la distance entre le nœud actuel et le nœud cible.
@@ -55,6 +57,7 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h) -> AStarResult 
     :param to_state: L'état du but
     :type to_state: AStarNode
     :param h: la fonction heuristique
+    :param cost: coût d'avancement dans une branche
     :return: AStarResult est un tuple nommé avec les champs suivants:
         - root : le nœud racine de l'arbre de recherche
         - path: le chemin de la racine au nœud de but
@@ -68,66 +71,60 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h) -> AStarResult 
     result = AStarResult()
     result.root = from_state
 
-    to_check = [from_state]
-    visited = []
-
     from_state_g = 0
-    from_state_h = h(from_state)
+    from_state_h = h(from_state, to_state)
     from_state_f = from_state_g + from_state_h  # f = g + h
 
     parent = {}  # Liste des parents pour pouvoir faire le chemin inverse à la fin
 
-    g_score = {from_state: from_state_g}
-    h_score = {from_state: from_state_h}
-    step = {from_state: 0}
+    g_score: {AStarNode: float} = {from_state: from_state_g}
+    h_score: {AStarNode: float} = {from_state: from_state_h}
+    step: {AStarNode: int} = {from_state: 0}
 
-    f_score = PriorityQueue()
+    visited = []  # Peut correspondre à une liste de nœuds fermés
+    f_score = PriorityQueue()  # Peut correspondre à une liste de nœuds ouverts
 
     # Tuple = (f, g, h, value). Seuls f et value sont utiles, mais on garde toutes les valeurs pour le debug
     f_score.put((from_state_f, from_state))
 
     # Tant qu'on a des états à essayer
-    while to_check:
-        current = f_score.get()  # On récupère l'état avec le plus petit heuristic
-        current_state: State = current[1]
-        step[current_state] = result.steps
+    while f_score:
+        _, current = f_score.get()  # On récupère l'état avec le plus petit heuristic
+        step[current] = result.steps
 
-        visited.append(current_state)  # Et on le marque comme visité
+        visited.append(current)  # Et on le marque comme visité
 
-        if current_state == to_state:  # Si c'est l'état cible, on s'arrête là
+        if current == to_state:  # Si c'est l'état cible, on s'arrête là
             # On ajoute les informations au résultat et on le retourne
-            result.path = build_path(parent, current_state)
+            result.path = build_path(parent, current)
             result.visited = visited
             result.g_score = g_score
             result.h_score = h_score
             result.step = step
+            result.parent = parent
             return result
 
         result.steps += 1  # On augmente le nombre d'étapes
 
-        if current_state in to_check:
-            to_check.remove(current_state)  # On le retire de la liste des nœuds à visiter
-
-        g_current = g_score[current_state]
+        g_current = g_score[current]
         # Sinon on essaie tous les fils de l'état actuel dans notre liste
-        for children in current_state.children():
+        for children in current.children():
 
-            if children in h_score:
-                h_child = h_score[children]
-            else:
-                h_child = h(children)
-
-            g_child = g_current + 1  # Chaque avancement dans une branche coûte 1
-            f_child = h_child + g_child
+            g_child = g_current + cost  # Chaque avancement dans une branche a un coût
 
             # Si le score actuel est meilleur que le score précédent (ou qu'il n'y en a pas)
-            if children not in g_score or f_child < g_score[children]:
+            # ça veut dire qu'on a atteint le nœud plus haut que précédemment
+            if children not in g_score or g_child < g_score[children]:
+
+                h_child = h(children, to_state)
+                f_child = h_child + g_child
+
                 h_score[children] = h_child
                 g_score[children] = g_child
-                parent[children] = current_state  # On met à jour le parent
+
+                parent[children] = current  # On change le lien de parenté avec l'ancien nœud
 
                 if children not in visited:  # On n'ajoute à la file que si l'état n'a pas déjà été testé précédemment
-                    to_check.append(children)
                     f_score.put((f_child, children))
 
     return None
@@ -192,9 +189,24 @@ def add_node(node: AStarNode, result: AStarResult, already: list[AStarNode], par
     :return: Un objet Node.
     """
     already.append(node)
-    n = Node(random(), node=node, parent=parent)
+    n = Node(random(), node=node, parent=parent)  # todo voir pour faire des noeuds sans nom
     for child in node.children():
+        if child in result.parent and result.parent[child] != node:
+            continue
         if child in result.visited and child not in already:
             add_node(child, result, already, parent=n)
 
     return n
+
+
+def wrap_search(from_state: AStarNode, to_state: AStarNode, h, cost, render_node, render_attr, file_name):
+    t_start = perf_counter()
+
+    print("----")
+    print(f"Début de la recherche {file_name}")
+    path = a_star_search(from_state, to_state, h, cost)
+    t_delta = perf_counter() - t_start
+    print(f"Temps d'execution : {t_delta:.5f} secondes")
+    print(f"Temps par noeud : {t_delta / path.steps:.5f} secondes")
+
+    render_tree(path, render_node, render_attr, file_name)

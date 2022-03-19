@@ -1,6 +1,4 @@
-from math import floor
-
-from a_star import a_star_search, AStarNode, render_tree, AStarResult, def_node_attr
+from a_star import AStarNode, AStarResult, def_node_attr, wrap_search
 from utils import ife, deepcopy2d
 
 
@@ -58,7 +56,7 @@ class TaquinState(AStarNode):
 
         empty_index = self.get_index(0)
         x = empty_index % self.col_count
-        y = floor(empty_index / self.row_count)
+        y = empty_index // self.row_count
 
         # Échange droit
         if x != self.col_count - 1:
@@ -118,18 +116,35 @@ def render_node(node: TaquinState, result: AStarResult) -> str:
     lines.append("")
 
     for row in node.rows:
-        lines.append("|".join(map(str, row)))
-        lines.append("--" * len(row))
+        lines.append("|".join(map(lambda x: f"{x:2d}", row)))
+        lines.append("---" * len(row))
 
     return "\n".join(lines)
 
 
-def heuristic_1(state: TaquinState) -> float:
+def hamming(state: TaquinState, _: TaquinState) -> float:
+    # Nombre de pièces qui ne sont pas à leur position (distance Hamming)
     state.update_indexes()
-    s = 0
+    res = 0
     for i in range(state.size - 1):
-        s += ife(state.get_index(i + 1) == i, a=0, b=1)
-    return s
+        res += ife(state.get_index(i + 1) == i, a=0, b=1)
+    return res
+
+
+def manhattan(state: TaquinState, final_state: TaquinState) -> float:
+    state.update_indexes()
+    res = 0
+    # Pour chaque point, on calcule la distance entre le point actuel et le point final
+    # La somme donne la distance de manhattan.
+    for i in range(state.size):
+        from_index = state.get_index(i)
+        to_index = final_state.get_index(i)
+
+        y = (from_index // state.row_count) - (to_index // state.row_count)
+        x = (from_index % state.col_count) - (to_index % state.col_count)
+
+        res += abs(y) + abs(x)
+    return res
 
 
 def _3x3():
@@ -153,25 +168,36 @@ def _3x3():
 
     to_state = TaquinState([
         [1, 2, 3],
-        [7, 0, 4],
-        [8, 6, 5]
-    ])
-
-    path = a_star_search(from_state, to_state, heuristic_2)
-    render_tree(path, render_node, def_node_attr, "out/taquin-3x3-heuristic_2.png")
-
-    to_state = TaquinState([
-        [1, 2, 3],
         [4, 5, 6],
         [7, 8, 0]
     ])
 
-    path = a_star_search(from_state, to_state, heuristic_1)
-    render_tree(path, render_node, def_node_attr, "out/taquin-3x3-heuristic_1.png")
+    wrap_search(from_state, to_state, hamming, 1, render_node, def_node_attr, "out/taquin-3x3-hamming.png")
+    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-3x3-manhattan.png")
+
+
+def _4x4():
+    from_state = TaquinState([
+        [12, 1, 3, 4],
+        [2, 13, 14, 5],
+        [11, 10, 8, 6],
+        [9, 15, 7, 0]
+    ])
+
+    to_state = TaquinState([
+        [2, 12, 3, 4],
+        [1, 13, 0, 5],
+        [11, 14, 7, 8],
+        [10, 9, 15, 6]
+    ])
+
+    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-4x4-manhattan.png")
+    # wrap_search(from_state, to_state, hamming,1, render_node, def_node_attr, "out/taquin-4x4-hamming.png")  # Trop long !
 
 
 def main():
     _3x3()
+    _4x4()
 
 
 if __name__ == '__main__':

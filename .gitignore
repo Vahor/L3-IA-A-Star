@@ -17,6 +17,7 @@ cmake-build-*/
 .idea/**/mongoSettings.xml
 *.iws
 .idea_modules/
+out/
 atlassian-ide-plugin.xml
 .idea/replstate.xml
 com_crashlytics_export_strings.xml
