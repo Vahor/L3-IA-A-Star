@@ -101,14 +101,18 @@ class TaquinState(AStarNode):
 def render_node(node: TaquinState, result: AStarResult) -> str:
     lines = []
 
-    lines.append(f"#{result.step[node]}")
+    if node in result.visited:
+        lines.append(f"#{result.visited[node]}")
+    else:
+        lines.append("")
     lines.append("")
+
     try:
         h = result.h_score[node]
         g = result.g_score[node]
         lines.append(f"f(n) = {h} + {g:.1f} = {h + g}")
-    except Exception as e:
-        print(type(e))
+    except:
+        pass
 
     lines.append("")
 
@@ -188,7 +192,7 @@ def _4x4():
         [10, 9, 15, 6]
     ])
 
-    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-4x4-manhattan.png")
+    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-4x4-manhattan.png", False)
     # wrap_search(from_state, to_state, manhattan, 0.1, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-s.png") # 60s environ 1800 noeuds
     # wrap_search(from_state, to_state, manhattan, 2, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-b.png") # 50s environ 1100 noeuds
     # wrap_search(from_state, to_state, hamming,1, render_node, def_node_attr, "out/taquin-4x4-hamming.png")  # Trop long !

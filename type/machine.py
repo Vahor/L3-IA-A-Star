@@ -61,6 +61,42 @@ class MachineState(AStarNode):
                     return stack[i + 1] == second
         return False
 
+    def is_free(self, letter: str) -> bool:
+        """
+        :param letter: la lettre dont on veut savoir l'état
+        :type letter: str
+        :return: Vrai si la lettre est libre, Faux sinon.
+        """
+
+        # Si le bloc est dans le bras, il n'est pas libre
+        if self.arm == letter:
+            return False
+
+        # Si le bloc n'est pas le premier element de la pile, c'est qu'il a quelque chose au-dessus de lui
+        for stack in self.stacks:
+            if stack and stack[0] == letter:
+                return True
+
+        return False
+
+    def on_table(self, letter: str) -> bool:
+        """
+        :param letter: la lettre dont on veut savoir l'état
+        :type letter: str
+        :return: Vrai si la lettre est sur la table, Faux sinon.
+        """
+
+        # Si le bloc est dans le bras, il n'est pas sur la table
+        if self.arm == letter:
+            return False
+
+        # Si le bloc est le dernier element de la pile, il est sur la table
+        for stack in self.stacks:
+            if stack and stack[-1] == letter:
+                return True
+
+        return False
+
     def children(self) -> list:
         """
         Construit la liste des nœuds fils du nœud actuel
@@ -101,14 +137,17 @@ class MachineState(AStarNode):
 def render_node(node: MachineState, result: AStarResult) -> str:
     lines = []
 
-    lines.append(f"#{result.step[node]}")
+    if node in result.visited:
+        lines.append(f"#{result.visited[node]}")
+    else:
+        lines.append("")
     lines.append("")
     try:
         h = result.h_score[node]
         g = result.g_score[node]
-        lines.append(f"f(n) = {h} + {g:.1f} = {h + g}")
+        lines.append(f"f(n) = {h} + {g:.1f} = {(h + g):.1f}")
     except Exception as e:
-        print(type(e))
+        pass
 
     lines.append("")
     lines.append(f"Bras : {node.arm}")
@@ -137,6 +176,7 @@ def td_3():
 
     wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-3-heuristic_1.png")
     wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine-3-heuristic_2.png")
+    wrap_search(from_state, to_state, heuristic_2, 0.1, render_node, def_node_attr, "out/machine-3-heuristic_2-g-b.png")
 
 
 def _5():
@@ -150,9 +190,18 @@ def _5():
                (ife(state.is_above('C', 'D')) * 3) - \
                (ife(state.is_above('E', None)) * 4)
 
+    def heuristic_2(state: MachineState, _) -> float:
+        return 4 - \
+               (ife(state.is_above('A', 'B'))) - \
+               (ife(state.is_above('B', 'C'))) - \
+               (ife(state.is_above('C', 'D'))) - \
+               (ife(state.is_above('E', None)))
+
     wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-5-heuristic_1.png")
-    wrap_search(from_state, to_state, heuristic_1, 0.1, render_node, def_node_attr, "out/machine-5-heuristic_1-g-s.png")
-    wrap_search(from_state, to_state, heuristic_1, 2, render_node, def_node_attr, "out/machine-5-heuristic_1-g-b.png")
+    wrap_search(from_state, to_state, heuristic_1, 0.1, render_node, def_node_attr, "out/machine-5-heuristic_1-g-s.png", False)
+    wrap_search(from_state, to_state, heuristic_1, 2, render_node, def_node_attr, "out/machine-5-heuristic_1-g-b.png", False)
+
+    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine-5-heuristic_2.png", False)
 
 
 def main():

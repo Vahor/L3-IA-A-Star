@@ -20,11 +20,10 @@ class AStarNode(State):
 class AStarResult:
     root: AStarNode
     path: list[AStarNode]
-    visited: list[AStarNode]
     g_score: {AStarNode: float}
     h_score: {AStarNode: float}
     parent: {AStarNode: AStarNode}
-    step: {AStarNode: int}
+    visited: {AStarNode: int}
     steps: int = 0
 
 
@@ -60,11 +59,10 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
     :return: AStarResult est un tuple nommé avec les champs suivants:
         - root : le nœud racine de l'arbre de recherche
         - path: le chemin de la racine au nœud de but
-        - visited : la liste des nœuds visités
         - g_score: le score g du nœud de but
         - h_score: le score h du nœud de but
         - steps: le nombre d'étapes
-        - step: l'ordre de passage d'un nœud
+        - visited: l'ordre de passage d'un nœud
     """
 
     from_state_g = 0
@@ -75,37 +73,39 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
 
     g_score: {AStarNode: float} = {from_state: from_state_g}
     h_score: {AStarNode: float} = {from_state: from_state_h}
-    step: {AStarNode: int} = {from_state: 0}
+    visited: {AStarNode: int} = {}  # Peut correspondre à une liste de nœuds fermés
 
-    visited = []  # Peut correspondre à une liste de nœuds fermés
     f_score = PriorityQueue()  # Peut correspondre à une liste de nœuds ouverts
 
     # Tuple = (f, g, h, value). Seuls f et value sont utiles, mais on garde toutes les valeurs pour le debug
     f_score.put((from_state_f, from_state))
 
+    steps = 0
+
     # Tant qu'on a des états à essayer
     while f_score:
         _, current = f_score.get()  # On récupère l'état avec le plus petit heuristic
-        step[current] = len(visited)
-
-        visited.append(current)  # Et on le marque comme visité
+        visited[current] = len(visited)
 
         if current == to_state:  # Si c'est l'état cible, on s'arrête là
             # On ajoute les informations au résultat et on le retourne
             return AStarResult(
                 from_state,
                 build_path(parent, current),
-                visited,
                 g_score,
                 h_score,
                 parent,
-                step,
-                len(visited)
+                visited,
+                steps
             )
 
         g_current = g_score[current]
         # Sinon on essaie tous les fils de l'état actuel dans notre liste
         for children in current.children():
+            if children == current:
+                continue
+
+            steps += 1
 
             g_child = g_current + cost  # Chaque avancement dans une branche a un coût
 
@@ -119,7 +119,7 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
                 h_score[children] = h_child
                 g_score[children] = g_child
 
-                parent[children] = current  # On change le lien de parenté avec l'ancien nœud
+                parent[children] = current  # On change le lien de parenté avec l'ancien nœud, comme ce chemin est plus court
 
                 if children not in visited:  # On n'ajoute à la file que si l'état n'a pas déjà été testé précédemment
                     f_score.put((f_child, children))
@@ -127,7 +127,7 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
     return None
 
 
-def render_tree(result: AStarResult, node_content, node_attr, file_name: str) -> None:
+def render_tree(result: AStarResult, node_content, node_attr, file_name: str, unvisited_nodes) -> None:
     """
     Génère une image à partir d'un résultat A*
 
@@ -137,14 +137,11 @@ def render_tree(result: AStarResult, node_content, node_attr, file_name: str) ->
     :param node_attr: Une fonction qui prend un nœud et un résultat A* et renvoie une chaîne d'attributs HTML pour le nœud
     :param file_name: Nom du fichier dans lequel enregistrer l'image
     :type file_name: str
+    :param unvisited_nodes: Est-ce qu'on affiche les nœuds non visités
+    :type unvisited_nodes: True or False
     """
 
-    if result is None:
-        print("Aucun chemin")
-        return
-    print(f"Recherche terminée en {result.steps} étapes ({file_name})")
-
-    root = add_node(result.root, result, [])
+    root = add_node(result.root, result, [], unvisited_nodes)
 
     DotExporter(root,
                 nodenamefunc=lambda n: node_content(n.node, result),
@@ -166,12 +163,17 @@ def def_node_attr(node, result: AStarResult) -> str:
     # Les attributs de styles sont utilisées avec graphviz, on les retrouves sur :
     #   https://www.graphviz.org/doc/info/shapes.html#styles-for-nodes
 
+    if node not in result.visited:
+        return "style=\"dotted\""
+
     if node in result.path:
         return "color=red,style=filled, fillcolor=\"#0000000f\""
+
     return ""
 
 
-def add_node(node: AStarNode, result: AStarResult, already: list[AStarNode], parent: Node or None = None) -> Node:
+def add_node(node: AStarNode, result: AStarResult, already: list[AStarNode], unvisited_nodes: bool,
+             parent: Node or None = None) -> Node:
     """
     Ajouter un nœud au résultat ainsi que ses fils s'ils ne sont pas déjà dans l'arbre
 
@@ -181,6 +183,8 @@ def add_node(node: AStarNode, result: AStarResult, already: list[AStarNode], par
     :type result: AStarResult
     :param already: La liste des nœuds qui ont déjà été visités
     :type already: list[AStarNode]
+    :param unvisited_nodes: Est-ce qu'on affiche les nœuds non visités
+    :type unvisited_nodes: True or False
     :param parent: Le nœud parent
     :type parent: Node or None
     :return: Un objet Node.
@@ -188,15 +192,20 @@ def add_node(node: AStarNode, result: AStarResult, already: list[AStarNode], par
     already.append(node)
     n = Node(random(), node=node, parent=parent)  # todo voir pour faire des noeuds sans nom
     for child in node.children():
-        if child in result.parent and result.parent[child] != node:
+        if child == node:
+            continue
+        if unvisited_nodes and child not in result.visited:
+            already.append(node)
+            Node(random(), node=child, parent=n)
             continue
         if child in result.visited and child not in already:
-            add_node(child, result, already, parent=n)
+            add_node(child, result, already, unvisited_nodes, parent=n)
 
     return n
 
 
-def wrap_search(from_state: AStarNode, to_state: AStarNode, h, cost, render_node, render_attr, file_name):
+def wrap_search(from_state: AStarNode, to_state: AStarNode, h, cost, render_node, render_attr, file_name,
+                unvisited_nodes: bool = True):
     t_start = perf_counter()
 
     print("----")
@@ -205,5 +214,12 @@ def wrap_search(from_state: AStarNode, to_state: AStarNode, h, cost, render_node
     t_delta = perf_counter() - t_start
     print(f"Temps d'execution : {t_delta:.5f} secondes")
     print(f"Temps par noeud : {t_delta / path.steps:.5f} secondes")
+    print(f"Nombre de noeuds visités : {path.steps}")
+    print(f"Nombre de noeuds parcourus : {len(path.visited)}")
 
-    render_tree(path, render_node, render_attr, file_name)
+    if path is None:
+        print("Aucun chemin trouvé")
+    else:
+        print(f"Écriture du fichier {file_name}")
+        render_tree(path, render_node, render_attr, file_name, unvisited_nodes)
+        print("Écriture terminée")
