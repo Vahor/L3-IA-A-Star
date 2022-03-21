@@ -1,18 +1,19 @@
 from dataclasses import dataclass
 from queue import PriorityQueue
-from random import random
 from time import perf_counter
 
-from anytree import Node
+from anytree import AnyNode
 from anytree.exporter import DotExporter
+from typing import Callable
 
-from state import State
 
-
-class AStarNode(State):
+class AStarNode:
 
     def __lt__(self, other):
         return False
+
+    def children(self) -> list:
+        return []
 
 
 # AStarResult est une classe qui contient le résultat de l'algorithme A*
@@ -27,7 +28,7 @@ class AStarResult:
     steps: int = 0
 
 
-def build_path(parent: {State: State}, current: State) -> list:
+def build_path(parent: {AStarNode: AStarNode}, current: AStarNode) -> list:
     """
     Construit le chemin inverse depuis un point jusqu'a la racine à l'aide de la liste des parents
 
@@ -45,7 +46,10 @@ def build_path(parent: {State: State}, current: State) -> list:
     return path
 
 
-def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) -> AStarResult or None:
+def a_star_search(from_state: AStarNode,
+                  to_state: AStarNode,
+                  h: Callable[[any, any], float],
+                  cost: int = 1) -> AStarResult or None:
     """
     Réalise une recherche A* pour trouver le chemin le plus court entre deux point.
     La fonction heuristique est utilisée pour estimer la distance entre le nœud actuel et le nœud cible.
@@ -85,7 +89,6 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
     # Tant qu'on a des états à essayer
     while f_score:
         _, current = f_score.get()  # On récupère l'état avec le plus petit heuristic
-        visited[current] = len(visited)
 
         if current == to_state:  # Si c'est l'état cible, on s'arrête là
             # On ajoute les informations au résultat et on le retourne
@@ -99,6 +102,7 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
                 steps
             )
 
+        visited[current] = len(visited)
         g_current = g_score[current]
         # Sinon on essaie tous les fils de l'état actuel dans notre liste
         for children in current.children():
@@ -119,7 +123,8 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
                 h_score[children] = h_child
                 g_score[children] = g_child
 
-                parent[children] = current  # On change le lien de parenté avec l'ancien nœud, comme ce chemin est plus court
+                parent[
+                    children] = current  # On change le lien de parenté avec l'ancien nœud, comme ce chemin est plus court
 
                 if children not in visited:  # On n'ajoute à la file que si l'état n'a pas déjà été testé précédemment
                     f_score.put((f_child, children))
@@ -127,7 +132,11 @@ def a_star_search(from_state: AStarNode, to_state: AStarNode, h, cost: int = 1) 
     return None
 
 
-def render_tree(result: AStarResult, node_content, node_attr, file_name: str, unvisited_nodes) -> None:
+def render_tree(result: AStarResult,
+                node_content: Callable[[AStarNode, AStarResult], str],
+                node_attr: Callable[[AStarNode, AStarResult], str],
+                file_name: str,
+                unvisited_nodes) -> None:
     """
     Génère une image à partir d'un résultat A*
 
@@ -149,12 +158,12 @@ def render_tree(result: AStarResult, node_content, node_attr, file_name: str, un
                 ).to_picture(file_name)
 
 
-def def_node_attr(node, result: AStarResult) -> str:
+def def_node_attr(node: AStarNode, result: AStarResult) -> str:
     """
     Renvoie la chaîne d'attribut d'un nœud
 
-    :param node: MachineState
-    :type node: MachineState
+    :param node: AStarNode
+    :type node: AStarNode
     :param result: AStarRésultat
     :type result: AStarResult
     :return: Chaîne utilisée pour spécifier les attributs d'un nœud dans le graphique.
@@ -172,8 +181,11 @@ def def_node_attr(node, result: AStarResult) -> str:
     return ""
 
 
-def add_node(node: AStarNode, result: AStarResult, already: list[AStarNode], unvisited_nodes: bool,
-             parent: Node or None = None) -> Node:
+def add_node(node: AStarNode,
+             result: AStarResult,
+             already: list[AStarNode],
+             show_unvisited_nodes: bool,
+             parent: AnyNode or None = None) -> AnyNode:
     """
     Ajouter un nœud au résultat ainsi que ses fils s'ils ne sont pas déjà dans l'arbre
 
@@ -183,28 +195,34 @@ def add_node(node: AStarNode, result: AStarResult, already: list[AStarNode], unv
     :type result: AStarResult
     :param already: La liste des nœuds qui ont déjà été visités
     :type already: list[AStarNode]
-    :param unvisited_nodes: Est-ce qu'on affiche les nœuds non visités
-    :type unvisited_nodes: True or False
+    :param show_unvisited_nodes: Est-ce qu'on affiche les nœuds non visités
+    :type show_unvisited_nodes: True or False
     :param parent: Le nœud parent
-    :type parent: Node or None
-    :return: Un objet Node.
+    :type parent: AnyNode or None
+    :return: Un objet AnyNode.
     """
     already.append(node)
-    n = Node(random(), node=node, parent=parent)  # todo voir pour faire des noeuds sans nom
+    n = AnyNode(node=node, parent=parent)
     for child in node.children():
         if child == node:
             continue
-        if unvisited_nodes and child not in result.visited:
+        if show_unvisited_nodes and child not in result.visited:
             already.append(node)
-            Node(random(), node=child, parent=n)
+            AnyNode(node=child, parent=n)
             continue
         if child in result.visited and child not in already:
-            add_node(child, result, already, unvisited_nodes, parent=n)
+            add_node(child, result, already, show_unvisited_nodes, parent=n)
 
     return n
 
 
-def wrap_search(from_state: AStarNode, to_state: AStarNode, h, cost, render_node, render_attr, file_name,
+def wrap_search(from_state: AStarNode,
+                to_state: AStarNode,
+                h: Callable[[any, any], float],
+                cost: int,
+                render_node: Callable[[any, any], str],
+                render_attr: Callable[[any, any], str],
+                file_name: str,
                 unvisited_nodes: bool = True):
     t_start = perf_counter()
 
