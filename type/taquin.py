@@ -149,18 +149,6 @@ def manhattan(state: TaquinState, final_state: TaquinState) -> float:
 
 
 def _3x3():
-    def heuristic_2(state: TaquinState) -> float:
-        state.update_indexes()
-        return (ife(state.get_index(1) == 0, a=0, b=1)) + \
-               (ife(state.get_index(2) == 1, a=0, b=1)) + \
-               (ife(state.get_index(3) == 2, a=0, b=1)) + \
-               (ife(state.get_index(7) == 3, a=0, b=1)) + \
-               (ife(state.get_index(0) == 4, a=0, b=1)) + \
-               (ife(state.get_index(4) == 5, a=0, b=1)) + \
-               (ife(state.get_index(8) == 6, a=0, b=1)) + \
-               (ife(state.get_index(6) == 7, a=0, b=1)) + \
-               (ife(state.get_index(5) == 8, a=0, b=1))
-
     from_state = TaquinState([
         [1, 4, 2],
         [7, 6, 3],
@@ -193,8 +181,8 @@ def _4x4():
     ])
 
     wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-4x4-manhattan.png", False)
-    # wrap_search(from_state, to_state, manhattan, 0.1, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-s.png") # 60s environ 1800 noeuds
-    # wrap_search(from_state, to_state, manhattan, 2, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-b.png") # 50s environ 1100 noeuds
+    # wrap_search(from_state, to_state, manhattan, 0.1, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-s.png", False) # 60s environ 1800 noeuds
+    # wrap_search(from_state, to_state, manhattan, 2, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-b.png", False) # [17-50]s environ 1100-3600 noeuds
     # wrap_search(from_state, to_state, hamming,1, render_node, def_node_attr, "out/taquin-4x4-hamming.png")  # Trop long !
 
 

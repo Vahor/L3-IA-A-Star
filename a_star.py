@@ -7,12 +7,16 @@ from anytree.exporter import DotExporter
 from typing import Callable
 
 
+# AStarNode est une classe qui représente un nœud dans l'algorithme de recherche A*
 class AStarNode:
 
     def __lt__(self, other):
         return False
 
     def children(self) -> list:
+        """
+        :return: Une liste des enfants du nœud.
+        """
         return []
 
 
@@ -49,7 +53,7 @@ def build_path(parent: {AStarNode: AStarNode}, current: AStarNode) -> list:
 def a_star_search(from_state: AStarNode,
                   to_state: AStarNode,
                   h: Callable[[any, any], float],
-                  cost: int = 1) -> AStarResult or None:
+                  cost: float = 1) -> AStarResult or None:
     """
     Réalise une recherche A* pour trouver le chemin le plus court entre deux point.
     La fonction heuristique est utilisée pour estimer la distance entre le nœud actuel et le nœud cible.
@@ -90,6 +94,8 @@ def a_star_search(from_state: AStarNode,
     while f_score:
         _, current = f_score.get()  # On récupère l'état avec le plus petit heuristic
 
+        visited[current] = len(visited)
+
         if current == to_state:  # Si c'est l'état cible, on s'arrête là
             # On ajoute les informations au résultat et on le retourne
             return AStarResult(
@@ -102,7 +108,6 @@ def a_star_search(from_state: AStarNode,
                 steps
             )
 
-        visited[current] = len(visited)
         g_current = g_score[current]
         # Sinon on essaie tous les fils de l'état actuel dans notre liste
         for children in current.children():
@@ -219,7 +224,7 @@ def add_node(node: AStarNode,
 def wrap_search(from_state: AStarNode,
                 to_state: AStarNode,
                 h: Callable[[any, any], float],
-                cost: int,
+                cost: float,
                 render_node: Callable[[any, any], str],
                 render_attr: Callable[[any, any], str],
                 file_name: str,
