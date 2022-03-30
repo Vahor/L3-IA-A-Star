@@ -101,17 +101,19 @@ class TaquinState(AStarNode):
 def render_node(node: TaquinState, result: AStarResult) -> str:
     lines = []
 
+    # On affiche l'ordre de parcours du nœud
     if node in result.visited:
         lines.append(f"#{result.visited[node]}")
     else:
         lines.append("")
     lines.append("")
 
+    # Ajout du score dans l'affichage
     try:
         h = result.h_score[node]
         g = result.g_score[node]
         lines.append(f"f(n) = {h} + {g:.1f} = {h + g}")
-    except:
+    except KeyError:
         pass
 
     lines.append("")

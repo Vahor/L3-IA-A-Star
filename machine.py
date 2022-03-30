@@ -109,6 +109,7 @@ class MachineState(AStarNode):
         # Si le bras est libre, on essaie de porter un element en tête de file
         if self.arm is None:
 
+            # Pour tous les blocs libres, on créé un état qui porte ce bloc
             for free_block in self.get_free_blocks():
                 new_stacks = deepcopy2d(self.stacks)
 
@@ -124,7 +125,9 @@ class MachineState(AStarNode):
         else:  # Sinon, on essaie de poser sur une tête de file, ou dans une nouvelle file
             for i in range(self.max_stacks):
                 new_stacks = deepcopy2d(self.stacks)
-                # On ajoute le bloc qu'on porte, dans la i-ème file
+                # On ajoute le bloc qu'on porte à la tête de la i-ème file
+                # Si la file est vide cela correspondra à un bloc posé sur la table
+
                 new_stacks[i].insert(0, self.arm)
 
                 state = MachineState(None, new_stacks, self.max_stacks)
@@ -137,21 +140,26 @@ class MachineState(AStarNode):
 def render_node(node: MachineState, result: AStarResult) -> str:
     lines = []
 
+    # On affiche l'ordre de parcours du nœud
     if node in result.visited:
         lines.append(f"#{result.visited[node]}")
     else:
         lines.append("")
     lines.append("")
+
+    # Ajout du score dans l'affichage
     try:
         h = result.h_score[node]
         g = result.g_score[node]
         lines.append(f"f(n) = {h} + {g:.1f} = {(h + g):.1f}")
-    except Exception as e:
+    except KeyError:
         pass
 
     lines.append("")
     lines.append(f"Bras : {node.arm}")
 
+    # On affiche les piles sous la forme : ABC.
+    # On complète avec des underscores si la pile n'est pas complète
     for i, stack in enumerate(node.stacks):
         lines.append(f"Pile #{i} : " + " ".join(stack[::-1]) + " _" * (node.size - len(stack)))
 
