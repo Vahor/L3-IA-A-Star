@@ -24,6 +24,7 @@ class AStarNode:
 @dataclass(frozen=True)
 class AStarResult:
     root: AStarNode
+    target: AStarNode
     path: list[AStarNode]
     g_score: {AStarNode: float}
     h_score: {AStarNode: float}
@@ -100,6 +101,7 @@ def a_star_search(from_state: AStarNode,
             # On ajoute les informations au résultat et on le retourne
             return AStarResult(
                 from_state,
+                to_state,
                 build_path(parent, current),
                 g_score,
                 h_score,
@@ -146,21 +148,86 @@ def render_tree(result: AStarResult,
     Génère une image à partir d'un résultat A*
 
     :param result: AStarRésultat
-    :type result: AStarResult
     :param node_content: Une fonction qui renvoie le contenu du nœud
     :param node_attr: Une fonction qui prend un nœud et un résultat A* et renvoie une chaîne d'attributs HTML pour le nœud
     :param file_name: Nom du fichier dans lequel enregistrer l'image
-    :type file_name: str
     :param unvisited_nodes: Est-ce qu'on affiche les nœuds non visités
     :type unvisited_nodes: True or False
     """
 
-    root = add_node(result.root, result, [], unvisited_nodes)
+    def add_node(node: AStarNode,
+                 already: list[AStarNode],
+                 show_unvisited_nodes: bool,
+                 parent: AnyNode or None = None) -> AnyNode:
+        """
+        Ajouter un nœud au résultat ainsi que ses fils s'ils ne sont pas déjà dans l'arbre
+
+        :param node: Le nœud à ajouter à l'arborescence
+        :type node: AStarNode
+        :param already: La liste des nœuds qui ont déjà été visités
+        :type already: list[AStarNode]
+        :param show_unvisited_nodes: Est-ce qu'on affiche les nœuds non visités
+        :type show_unvisited_nodes: True or False
+        :param parent: Le nœud parent
+        :type parent: AnyNode or None
+        :return: Un objet AnyNode.
+        """
+        already.append(node)
+        n = AnyNode(node=node, parent=parent)
+        for child in node.children():
+            if child == node:
+                continue
+            if show_unvisited_nodes and child not in result.visited:
+                already.append(node)
+                AnyNode(node=child, parent=n)
+                continue
+            if child in result.visited and child not in already:
+                add_node(child, already, show_unvisited_nodes, parent=n)
+
+        return n
+
+    root = add_node(result.root, [], unvisited_nodes)
 
     DotExporter(root,
                 nodenamefunc=lambda n: node_content(n.node, result),
                 nodeattrfunc=lambda n: node_attr(n.node, result)
-                ).to_picture(file_name)
+                ).to_picture(file_name + ".png")
+
+
+def render_path(result: AStarResult,
+                node_content: Callable[[AStarNode, AStarResult], str],
+                node_attr: Callable[[AStarNode, AStarResult], str],
+                file_name: str,
+                ) -> None:
+    """
+    Génère une image à partir d'un résultat A*, mais ne dessine que le chemin
+
+    :param result: AStarRésultat
+    :param node_content: Une fonction qui renvoie le contenu du nœud
+    :param node_attr: Une fonction qui prend un nœud et un résultat A* et renvoie une chaîne d'attributs HTML pour le nœud
+    :param file_name: Nom du fichier dans lequel enregistrer l'image
+    """
+
+    def add_node(node: AStarNode,
+                 already: list[AStarNode],
+                 parent: AnyNode or None = None) -> AnyNode:
+        already.append(node)
+        n = AnyNode(node=node)
+
+        if parent:
+            parent.children = [n]
+
+        if node in result.parent:
+            add_node(result.parent[node], already, parent=n)
+
+        return n
+
+    root = add_node(result.target, [])
+
+    DotExporter(root,
+                nodenamefunc=lambda n: node_content(n.node, result),
+                nodeattrfunc=lambda n: node_attr(n.node, result)
+                ).to_picture(file_name + "_path.png")
 
 
 def def_node_attr(node: AStarNode, result: AStarResult) -> str:
@@ -184,41 +251,6 @@ def def_node_attr(node: AStarNode, result: AStarResult) -> str:
         return "color=red,style=filled, fillcolor=\"#0000000f\""
 
     return ""
-
-
-def add_node(node: AStarNode,
-             result: AStarResult,
-             already: list[AStarNode],
-             show_unvisited_nodes: bool,
-             parent: AnyNode or None = None) -> AnyNode:
-    """
-    Ajouter un nœud au résultat ainsi que ses fils s'ils ne sont pas déjà dans l'arbre
-
-    :param node: Le nœud à ajouter à l'arborescence
-    :type node: AStarNode
-    :param result: Le résultat de la recherche A*
-    :type result: AStarResult
-    :param already: La liste des nœuds qui ont déjà été visités
-    :type already: list[AStarNode]
-    :param show_unvisited_nodes: Est-ce qu'on affiche les nœuds non visités
-    :type show_unvisited_nodes: True or False
-    :param parent: Le nœud parent
-    :type parent: AnyNode or None
-    :return: Un objet AnyNode.
-    """
-    already.append(node)
-    n = AnyNode(node=node, parent=parent)
-    for child in node.children():
-        if child == node:
-            continue
-        if show_unvisited_nodes and child not in result.visited:
-            already.append(node)
-            AnyNode(node=child, parent=n)
-            continue
-        if child in result.visited and child not in already:
-            add_node(child, result, already, show_unvisited_nodes, parent=n)
-
-    return n
 
 
 def wrap_search(from_state: AStarNode,
@@ -245,4 +277,5 @@ def wrap_search(from_state: AStarNode,
     else:
         print(f"Écriture du fichier {file_name}")
         render_tree(path, render_node, render_attr, file_name, unvisited_nodes)
+        render_path(path, render_node, render_attr, file_name)
         print("Écriture terminée")
