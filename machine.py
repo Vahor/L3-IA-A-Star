@@ -7,8 +7,8 @@ from utils import ife, deepcopy2d
 @dataclass(frozen=True)  # Le nombre d'étapes change aussi selon l'ordre.
 class MachineState(AStarNode):
     arm: str or None
-    stacks: list[list[str]] = field(default_factory=list, hash=False)
-    max_stacks: int = field(default=3)
+    stacks: list[list[str]] = field(hash=False)
+    max_stacks: int
 
     def __post_init__(self):
         # On remplit les piles avec des listes vides au besoin
@@ -117,7 +117,7 @@ class MachineState(AStarNode):
                         stack.remove(free_block)
                         break
 
-                state = MachineState(free_block, new_stacks)
+                state = MachineState(free_block, new_stacks, self.max_stacks)
 
                 children.append(state)
 
@@ -127,7 +127,7 @@ class MachineState(AStarNode):
                 # On ajoute le bloc qu'on porte, dans la i-ème file
                 new_stacks[i].insert(0, self.arm)
 
-                state = MachineState(None, new_stacks)
+                state = MachineState(None, new_stacks, self.max_stacks)
 
                 children.append(state)
 
@@ -171,17 +171,17 @@ def td_3():
                (ife(state.is_above('B', 'C'))) - \
                (ife(state.is_above('C', None)))
 
-    from_state = MachineState(None, [['C', 'A'], ['B']])
-    to_state = MachineState(None, [['A', 'B', 'C']])
+    from_state = MachineState(None, [['C', 'A'], ['B']], 3)
+    to_state = MachineState(None, [['A', 'B', 'C']], 3)
 
-    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-3-heuristic_1.png")
-    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine-3-heuristic_2.png")
-    wrap_search(from_state, to_state, heuristic_2, 0.1, render_node, def_node_attr, "out/machine-3-heuristic_2-g-b.png")
+    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine/machine-3-heuristic_1")
+    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine/machine-3-heuristic_2")
+    wrap_search(from_state, to_state, heuristic_2, 0.1, render_node, def_node_attr, "out/machine/machine-3-heuristic_2-g-b")
 
 
 def _5():
-    from_state = MachineState('E', [['C', 'A'], ['B'], ['D']])
-    to_state = MachineState(None, [['A', 'B', 'C', 'D', 'E']])
+    from_state = MachineState('E', [['C', 'A'], ['B'], ['D']], 3)
+    to_state = MachineState(None, [['A', 'B', 'C', 'D', 'E']], 3)
 
     def heuristic_1(state: MachineState, _) -> float:
         return 10 - \
@@ -197,11 +197,14 @@ def _5():
                (ife(state.is_above('C', 'D'))) - \
                (ife(state.is_above('E', None)))
 
-    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine-5-heuristic_1.png")
-    wrap_search(from_state, to_state, heuristic_1, 0.1, render_node, def_node_attr, "out/machine-5-heuristic_1-g-s.png", False)
-    wrap_search(from_state, to_state, heuristic_1, 2, render_node, def_node_attr, "out/machine-5-heuristic_1-g-b.png", False)
+    wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine/machine-5-heuristic_1")
+    wrap_search(from_state, to_state, heuristic_1, 0.1, render_node, def_node_attr, "out/machine/machine-5-heuristic_1-g-s",
+                False)
+    wrap_search(from_state, to_state, heuristic_1, 2, render_node, def_node_attr, "out/machine/machine-5-heuristic_1-g-b",
+                False)
 
-    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine-5-heuristic_2.png", False)
+    wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine/machine-5-heuristic_2",
+                False)
 
 
 def main():

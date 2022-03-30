@@ -17,7 +17,7 @@ def deepcopy2d(x: list) -> list:
     """
     Retourne une copie d'une liste 2D
 
-    :param x: la 2d liste à copier
+    :param x: la liste 2d à copier
     :return: La copie de la liste.
     """
     return [row[:] for row in x]

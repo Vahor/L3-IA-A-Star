@@ -161,8 +161,8 @@ def _3x3():
         [7, 8, 0]
     ])
 
-    wrap_search(from_state, to_state, hamming, 1, render_node, def_node_attr, "out/taquin-3x3-hamming.png")
-    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-3x3-manhattan.png")
+    wrap_search(from_state, to_state, hamming, 1, render_node, def_node_attr, "out/taquin/taquin-3x3-hamming.png")
+    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin/taquin-3x3-manhattan.png")
 
 
 def _4x4():
@@ -180,10 +180,10 @@ def _4x4():
         [10, 9, 15, 6]
     ])
 
-    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin-4x4-manhattan.png", False)
-    # wrap_search(from_state, to_state, manhattan, 0.1, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-s.png", False) # 60s environ 1800 noeuds
-    # wrap_search(from_state, to_state, manhattan, 2, render_node, def_node_attr, "out/taquin-4x4-manhattan-g-b.png", False) # [17-50]s environ 1100-3600 noeuds
-    # wrap_search(from_state, to_state, hamming,1, render_node, def_node_attr, "out/taquin-4x4-hamming.png")  # Trop long !
+    wrap_search(from_state, to_state, manhattan, 1, render_node, def_node_attr, "out/taquin/taquin-4x4-manhattan.png", False)
+    # wrap_search(from_state, to_state, manhattan, 0.1, render_node, def_node_attr, "out/taquin/taquin-4x4-manhattan-g-s.png", False) # 60s environ 1800 noeuds
+    # wrap_search(from_state, to_state, manhattan, 2, render_node, def_node_attr, "out/taquin/taquin-4x4-manhattan-g-b.png", False) # [17-50]s environ 1100-3600 noeuds
+    # wrap_search(from_state, to_state, hamming,1, render_node, def_node_attr, "out/taquin/taquin-4x4-hamming.png")  # Trop long !
 
 
 def main():
