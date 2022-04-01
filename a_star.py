@@ -93,7 +93,7 @@ def a_star_search(from_state: AStarNode,
 
     # Tant qu'on a des états à essayer
     while f_score:
-        _, current = f_score.get()  # On récupère l'état avec le plus petit heuristic
+        _, current = f_score.get()  # On récupère l'état avec le plus petit heuristic (et on le retire)
 
         visited[current] = len(visited)
 

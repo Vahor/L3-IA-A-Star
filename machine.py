@@ -179,18 +179,16 @@ def td_3():
                (ife(state.is_above('B', 'C'))) - \
                (ife(state.is_above('C', None)))
 
-    from_state = MachineState(None, [['C', 'A'], ['B']], 3)
+    from_state = MachineState(None, [['A'], ['B'], ['C']], 3)
     to_state = MachineState(None, [['A', 'B', 'C']], 3)
 
     wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine/machine-3-heuristic_1")
     wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine/machine-3-heuristic_2")
-    wrap_search(from_state, to_state, heuristic_2, 0.1, render_node, def_node_attr, "out/machine/machine-3-heuristic_2-g-b")
+    wrap_search(from_state, to_state, heuristic_2, 0.1, render_node, def_node_attr,
+                "out/machine/machine-3-heuristic_2-g-b")
 
 
 def _5():
-    from_state = MachineState('E', [['C', 'A'], ['B'], ['D']], 3)
-    to_state = MachineState(None, [['A', 'B', 'C', 'D', 'E']], 3)
-
     def heuristic_1(state: MachineState, _) -> float:
         return 10 - \
                (ife(state.is_above('A', 'B')) * 1) - \
@@ -205,10 +203,15 @@ def _5():
                (ife(state.is_above('C', 'D'))) - \
                (ife(state.is_above('E', None)))
 
+    from_state = MachineState('E', [['C', 'A'], ['B'], ['D']], 3)
+    to_state = MachineState(None, [['A', 'B', 'C', 'D', 'E']], 3)
+
     wrap_search(from_state, to_state, heuristic_1, 1, render_node, def_node_attr, "out/machine/machine-5-heuristic_1")
-    wrap_search(from_state, to_state, heuristic_1, 0.1, render_node, def_node_attr, "out/machine/machine-5-heuristic_1-g-s",
+    wrap_search(from_state, to_state, heuristic_1, 0.1, render_node, def_node_attr,
+                "out/machine/machine-5-heuristic_1-g-s",
                 False)
-    wrap_search(from_state, to_state, heuristic_1, 2, render_node, def_node_attr, "out/machine/machine-5-heuristic_1-g-b",
+    wrap_search(from_state, to_state, heuristic_1, 2, render_node, def_node_attr,
+                "out/machine/machine-5-heuristic_1-g-b",
                 False)
 
     wrap_search(from_state, to_state, heuristic_2, 1, render_node, def_node_attr, "out/machine/machine-5-heuristic_2",
